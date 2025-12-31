@@ -1,5 +1,8 @@
 .venv
 .idea
+dist
+build
+main.spec
 misc.xml
 profiles_settings.xml
 vcs.xml
