@@ -26,6 +26,7 @@ class LogViewerApp:
         clean_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Clean", menu=clean_menu)
         clean_menu.add_command(label="Clear lines containing...", command=self.clear_lines)
+        clean_menu.add_command(label="Clear empty lines...", command=self.clear_empty_lines)
 
         # Configuration Menu
         config_menu = tk.Menu(menubar, tearoff=0)
@@ -66,6 +67,18 @@ class LogViewerApp:
                     self.apply_shades()
             except Exception as e:
                 messagebox.showerror("Error", f"Could not open the file:\n{str(e)}")
+
+    def clear_empty_lines(self):
+        """Clears all empty lines from the text area"""
+        content = self.text_area.get(1.0, tk.END).strip()
+        if not content:
+            messagebox.showwarning("Warning", "No content to clear")
+            return
+
+        lines = [line for line in content.split('\n') if line.strip()]  # Keep only non-empty lines
+        self.text_area.delete(1.0, tk.END)
+        self.text_area.insert(1.0, '\n'.join(lines))
+        self.apply_shades()
 
     def clear_lines(self):
         """Shows a dialog to enter text and deletes lines that contain it"""
