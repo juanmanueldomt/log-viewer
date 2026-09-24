@@ -1,4 +1,4 @@
-# 📊 JMLogViewer
+# 📊 Advanced LogViewer
 
 [![CI](https://github.com/juanmanueldomt/log-viewer/actions/workflows/ci.yml/badge.svg)](https://github.com/juanmanueldomt/log-viewer/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue.svg)
