@@ -1,0 +1,89 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "jmlogviewer"
+description = "A fast, minimal desktop viewer for large log files: search, highlight, mark and tail."
+readme = "README.md"
+license = "AGPL-3.0-or-later"
+license-files = ["LICENSE"]
+authors = [{ name = "Juan Manuel Dominguez Tlapale" }]
+requires-python = ">=3.11"
+dependencies = []
+dynamic = ["version"]
+keywords = ["logs", "log viewer", "tail", "tkinter", "debugging"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: X11 Applications",
+    "Environment :: Win32 (MS Windows)",
+    "Environment :: MacOS X",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: System :: Logging",
+    "Topic :: Software Development :: Debuggers",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Homepage = "https://github.com/juanmanueldomt/log-viewer"
+Issues = "https://github.com/juanmanueldomt/log-viewer/issues"
+
+[project.gui-scripts]
+jmlogviewer = "jmlogviewer.app:main"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.11",
+    "pytest>=8.0",
+    "ruff>=0.6",
+]
+
+[tool.hatch.version]
+path = "src/jmlogviewer/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/jmlogviewer"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle
+    "W",
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # bugbear
+    "UP",  # pyupgrade
+    "SIM", # simplify
+    "C4",  # comprehensions
+    "PT",  # pytest style
+    "RUF",
+    "N",   # naming
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unreachable = true
+files = ["src", "tests"]
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+warn_unreachable = false  # asserts on properties before/after an action confuse narrowing
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = ["gui: needs a display to create Tk windows (run under xvfb-run on headless Linux)"]
