@@ -1,9 +1,26 @@
-.venv
-.idea
-dist
-build
-main.spec
-misc.xml
-profiles_settings.xml
-vcs.xml
-workspace.xml
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Packaging / PyInstaller
+build/
+dist/
+*.egg-info/
+*.spec
+
+# Coverage
+.coverage
+htmlcov/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+.DS_Store
