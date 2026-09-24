@@ -156,7 +156,10 @@ class MainWindow:
         self._panel = tk.BooleanVar(root, settings.side_panel)
         self._theme = tk.StringVar(root, self.palette.name)
         self._pending = Change.NONE
-        self._update_scheduled = False
+        self._apply_id: str | None = None
+        self._closed = False
+        self._labels: dict[str, tuple[str, str]] = {}
+        self._progress_shown = False
         self._poll_id: str | None = None
         self._save_id: str | None = None
         self._state_id: str | None = None
@@ -541,6 +544,9 @@ class MainWindow:
         self.view.reset()
 
     def quit(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
         self._save_file_state()
         self.settings.geometry = self.root.wm_geometry()
         self.settings.side_panel_width = self._panel_width()
@@ -549,6 +555,15 @@ class MainWindow:
         self._unsubscribe()
         self.executor.shutdown()
         self.session.close()
+        for after_id in (
+            self._apply_id,
+            self._poll_id,
+            self._save_id,
+            self._state_id,
+            self._message_id,
+        ):
+            if after_id is not None:
+                self.root.after_cancel(after_id)
         self.root.destroy()
 
     def _save_file_state(self) -> None:
@@ -619,9 +634,10 @@ class MainWindow:
             self.show_message(str(exc), error=True)
             return
         self._find_pending = None
-        self._reveal_from = (
-            None if query is None or filtering else self._reference_line(before=True)
-        )
+        # As results arrive, jump to the first match from the current line on (inclusive).
+        current = self.view.current_line
+        origin = current - 1 if current is not None else self._reference_line(before=True)
+        self._reveal_from = None if query is None or filtering else origin
         self._update_search_status()
         self.view.refresh()
 
@@ -1076,13 +1092,12 @@ class MainWindow:
 
     def _on_session_change(self, change: Change) -> None:
         self._pending |= change
-        if not self._update_scheduled:
-            self._update_scheduled = True
-            self.root.after_idle(self._apply_changes)
+        if self._apply_id is None:
+            self._apply_id = self.root.after_idle(self._apply_changes)
 
     def _apply_changes(self) -> None:
         change, self._pending = self._pending, Change.NONE
-        self._update_scheduled = False
+        self._apply_id = None
         if Change.FILE in change:
             file = self.session.file
             self.root.title(f"{file.name} \N{EM DASH} {APP_NAME}" if file else APP_NAME)
@@ -1140,41 +1155,41 @@ class MainWindow:
             if rows.filtered:
                 filtered = f"  \N{MIDDLE DOT}  {len(rows):,} shown"
             details = f"{file.encoding.upper()}  \N{MIDDLE DOT}  {human_size(file.disk_size)}"
+        following = self.view.at_end
         if self._follow.get():
-            follow = (
-                "\N{BLACK CIRCLE} Following"
-                if self.view.at_end
-                else "Paused \N{EM DASH} End resumes"
-            )
-        self.position_label.configure(text=position)
-        self.filter_label.configure(text=filtered)
-        self.file_label.configure(text=details)
-        self.follow_label.configure(
-            text=follow, style="Accent.Status.TLabel" if self.view.at_end else "Status.TLabel"
-        )
+            follow = "\N{BLACK CIRCLE} Following" if following else "Paused \N{EM DASH} End resumes"
+        self._set_label(self.position_label, position)
+        self._set_label(self.filter_label, filtered)
+        self._set_label(self.file_label, details)
+        self._set_label(self.follow_label, follow, "Accent" if following else "")
         activities = session.activities()
         if activities:
             activity = activities[0]
-            self.activity_label.configure(text=f"{activity.label} {activity.progress:.0%}")
+            self._set_label(self.activity_label, f"{activity.label} {activity.progress:.0%}")
             self.progress.configure(value=activity.progress)
-            if not self.progress.winfo_ismapped():
+            if not self._progress_shown:
                 self.progress.pack(side="right", padx=(0, 6), before=self.activity_label)
+                self._progress_shown = True
         else:
-            self.activity_label.configure(text="")
-            self.progress.pack_forget()
+            self._set_label(self.activity_label, "")
+            if self._progress_shown:
+                self.progress.pack_forget()
+                self._progress_shown = False
         self._update_search_status()
         message = session.message or self._message
-        error = bool(session.message)
-        self.message_label.configure(
-            text=message, style="Error.Status.TLabel" if error else "Status.TLabel"
-        )
+        self._set_label(self.message_label, message, "Error" if session.message else "")
+
+    def _set_label(self, label: ttk.Label, text: str, variant: str = "") -> None:
+        """Update a status label only if it changed: Tk calls are costly while scans run."""
+        style = f"{variant}.Status.TLabel" if variant else "Status.TLabel"
+        if self._labels.get(str(label)) != (text, style):
+            self._labels[str(label)] = (text, style)
+            label.configure(text=text, style=style)
 
     def show_message(self, text: str, *, error: bool = False) -> None:
         """A short-lived note in the status bar."""
         self._message = text
-        self.message_label.configure(
-            text=text, style="Error.Status.TLabel" if error else "Status.TLabel"
-        )
+        self._set_label(self.message_label, text, "Error" if error else "")
         if self._message_id is not None:
             self.root.after_cancel(self._message_id)
         self._message_id = self.root.after(MESSAGE_MS, self._clear_message)

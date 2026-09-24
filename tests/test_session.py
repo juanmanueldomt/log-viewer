@@ -212,7 +212,7 @@ class TestRules:
         assert session.rule_scan(rules[3]) is None
         assert texts(session) == ["ERROR", "WARN", "ERROR"]
 
-    def test_recolouring_keeps_the_scan(
+    def test_recoloring_keeps_the_scan(
         self, session: LogSession, executor: ManualExecutor, make_file: MakeFile
     ) -> None:
         rule = Rule(Query("ERROR"))
@@ -220,9 +220,9 @@ class TestRules:
         session.set_rules([rule])
         executor.run_pending()
         scan = session.rule_scan(rule)
-        recoloured = rule.with_changes(color="#000000")
-        session.set_rules([recoloured])
-        assert session.rule_scan(recoloured) is scan
+        recolored = rule.with_changes(color="#000000")
+        session.set_rules([recolored])
+        assert session.rule_scan(recolored) is scan
         assert executor.pending == 0
 
     def test_invalid_rule_is_reported(self, session: LogSession) -> None:

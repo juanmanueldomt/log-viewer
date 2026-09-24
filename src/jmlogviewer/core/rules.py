@@ -1,4 +1,4 @@
-"""Highlight rules: colour, or hide, the lines matching an expression."""
+"""Highlight rules: color, or hide, the lines matching an expression."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ RULE_COLORS = (
     "#0090FF",  # blue
     "#8E4EC6",  # purple
     "#D6409F",  # pink
-    "#8B8D98",  # grey
+    "#8B8D98",  # gray
 )
 
 
@@ -96,7 +96,7 @@ def default_rules() -> list[Rule]:
 
 
 def next_color(rules: list[Rule]) -> str:
-    """The first palette colour not used yet (cycling when all are taken)."""
+    """The first palette color not used yet (cycling when all are taken)."""
     used = {rule.color.upper() for rule in rules}
     for color in RULE_COLORS:
         if color.upper() not in used:

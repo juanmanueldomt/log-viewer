@@ -36,6 +36,7 @@ class SearchBar(ttk.Frame):
         self._fonts = fonts
         self._after: str | None = None
         self._history_index = -1
+        self._status = ("", False)
         self.text = tk.StringVar(self)
         self.case_sensitive = tk.BooleanVar(self, settings.search_case_sensitive)
         self.whole_word = tk.BooleanVar(self, settings.search_whole_word)
@@ -128,11 +129,21 @@ class SearchBar(ttk.Frame):
         self.entry.icursor("end")
 
     def set_status(self, text: str, *, error: bool = False) -> None:
-        self.counter.configure(text=text, style="Error.Status.TLabel" if error else "Muted.TLabel")
-        self.entry.configure(style="Error.TEntry" if error else "TEntry")
+        if (text, error) != self._status:  # skip no-op Tk calls: this runs on every redraw
+            self._status = (text, error)
+            self.counter.configure(
+                text=text, style="Error.Status.TLabel" if error else "Muted.TLabel"
+            )
+            self.entry.configure(style="Error.TEntry" if error else "TEntry")
 
     def apply_palette(self, palette: Palette) -> None:
         self._placeholder.apply_palette(palette, self._fonts.ui)
+
+    def destroy(self) -> None:
+        if self._after is not None:
+            self.after_cancel(self._after)
+            self._after = None
+        super().destroy()
 
     def remember(self) -> None:
         """Add the current text to the search history."""

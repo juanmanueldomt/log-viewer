@@ -6,6 +6,7 @@ import contextlib
 import hashlib
 import os
 import stat
+import sys
 import time
 from array import array
 from bisect import bisect_left
@@ -23,6 +24,48 @@ FINGERPRINT_BYTES = 4096
 ENCODING_SAMPLE_BYTES = 1 << 16
 BLOCK_READ_LIMIT = 1 << 20
 """Above this many bytes, :meth:`LogFile.read_lines` reads line by line to honour caps."""
+
+
+if sys.platform == "win32":
+    import ctypes
+    import msvcrt
+    from ctypes import wintypes
+
+    _create_file = ctypes.windll.kernel32.CreateFileW
+    _create_file.argtypes = (
+        wintypes.LPCWSTR,
+        wintypes.DWORD,
+        wintypes.DWORD,
+        wintypes.LPVOID,
+        wintypes.DWORD,
+        wintypes.DWORD,
+        wintypes.HANDLE,
+    )
+    _create_file.restype = wintypes.HANDLE
+    _GENERIC_READ = 0x80000000
+    _SHARE_READ_WRITE_DELETE = 0x1 | 0x2 | 0x4
+    _OPEN_EXISTING = 3
+    _INVALID_HANDLE = wintypes.HANDLE(-1).value
+
+    def open_shared(path: Path) -> BinaryIO:
+        """Open a file for reading without locking it.
+
+        Python's ``open`` denies other processes the right to rename or delete
+        the file while it is open, which would break log rotation of the
+        program writing the log.
+        """
+        handle = _create_file(
+            str(path), _GENERIC_READ, _SHARE_READ_WRITE_DELETE, None, _OPEN_EXISTING, 0, None
+        )
+        if handle == _INVALID_HANDLE:
+            raise ctypes.WinError()
+        return os.fdopen(msvcrt.open_osfhandle(handle, os.O_RDONLY | os.O_BINARY), "rb")
+
+else:
+
+    def open_shared(path: Path) -> BinaryIO:
+        """Open a file for reading (other programs may still rename or delete it)."""
+        return path.open("rb")
 
 
 class FileChange(Enum):
@@ -44,7 +87,7 @@ class IndexBatch:
 
 @dataclass(frozen=True, slots=True)
 class Fingerprint:
-    """Digest of the first bytes of a file, used to recognise it later."""
+    """Digest of the first bytes of a file, used to recognize it later."""
 
     length: int
     digest: str
@@ -55,7 +98,7 @@ class Fingerprint:
 
     @classmethod
     def of_file(cls, path: Path, length: int = FINGERPRINT_BYTES) -> Fingerprint:
-        with path.open("rb") as handle:
+        with open_shared(path) as handle:
             return cls.of_bytes(handle.read(length))
 
     def matches(self, path: Path) -> bool:
@@ -85,7 +128,7 @@ def index_lines(
     starts = array("Q")
     pos = start
     last_emit = time.monotonic()
-    with path.open("rb") as handle:
+    with open_shared(path) as handle:
         handle.seek(start)
         while pos < end:
             chunk = handle.read(min(chunk_bytes, end - pos))
@@ -129,7 +172,7 @@ class LogFile:
             raise IsADirectoryError(f"'{self.path}' is a directory")
         if not stat.S_ISREG(info.st_mode):
             raise OSError(f"'{self.path}' is not a regular file")
-        with self.path.open("rb") as handle:
+        with open_shared(self.path) as handle:
             sample = handle.read(ENCODING_SAMPLE_BYTES)
         self.encoding, bom_length = detect_encoding(sample)
         self.fingerprint = Fingerprint.of_bytes(sample[:FINGERPRINT_BYTES])
@@ -186,7 +229,7 @@ class LogFile:
         The file is not kept open between uses: on Windows an open handle would
         prevent the application writing the log from rotating it.
         """
-        with self.path.open("rb") as handle:
+        with open_shared(self.path) as handle:
             yield BlockReader(self, handle)
 
     def read_lines(self, first: int, stop: int, max_line_bytes: int | None = None) -> list[str]:

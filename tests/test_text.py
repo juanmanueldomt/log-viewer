@@ -36,7 +36,7 @@ class TestToDisplay:
     def test_plain_text_is_unchanged(self) -> None:
         assert to_display("a\tb\nc") == "a\tb\nc"
 
-    def test_ansi_colours_are_removed(self) -> None:
+    def test_ansi_colors_are_removed(self) -> None:
         assert to_display("\x1b[31;1mERROR\x1b[0m done") == "ERROR done"
 
     def test_osc_hyperlinks_are_removed(self) -> None:
@@ -51,7 +51,7 @@ class TestDecodeBlock:
     def test_last_terminator_is_removed(self) -> None:
         assert decode_block(b"a\nb\n", "utf-8") == "a\nb"
 
-    def test_crlf_is_normalised(self) -> None:
+    def test_crlf_is_normalized(self) -> None:
         assert decode_block(b"a\r\nb\r\n", "utf-8") == "a\nb"
 
     def test_empty_lines_are_kept(self) -> None:

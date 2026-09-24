@@ -1,26 +1,31 @@
-"""Small reusable widgets: tooltips, colour swatches, colour picker, placeholders."""
+"""Small reusable widgets: tooltips, color swatches, color picker, placeholders."""
 
 from __future__ import annotations
 
 import contextlib
 import tkinter as tk
+import weakref
 from collections.abc import Callable, Sequence
 from tkinter import colorchooser, ttk
 from typing import Any
 
 from .theme import LIGHT, Palette, blend
 
-_swatches: dict[tuple[str, str, int, str], tk.PhotoImage] = {}
+# Images belong to one Tk interpreter: cache them per root window.
+_swatches: weakref.WeakKeyDictionary[tk.Misc, dict[tuple[str, int, str], tk.PhotoImage]] = (
+    weakref.WeakKeyDictionary()
+)
 
 
 def swatch(master: tk.Misc, color: str, *, size: int = 12, kind: str = "fill") -> tk.PhotoImage:
-    """A small colour sample image, cached.
+    """A small color sample image, cached.
 
     *kind* is ``"fill"`` (solid), ``"hollow"`` (outline: disabled) or
     ``"crossed"`` (outline with a diagonal: lines are hidden).
     """
-    key = (str(master.winfo_toplevel()), color, size, kind)
-    image = _swatches.get(key)
+    cache = _swatches.setdefault(master.nametowidget("."), {})
+    key = (color, size, kind)
+    image = cache.get(key)
     if image is not None:
         return image
     image = tk.PhotoImage(master=master, width=size, height=size)
@@ -38,7 +43,7 @@ def swatch(master: tk.Misc, color: str, *, size: int = 12, kind: str = "fill") -
         if kind == "crossed":
             for i in range(size):
                 image.put(color, to=(i, i, min(size, i + 2), min(size, i + 1)))
-    _swatches[key] = image
+    cache[key] = image
     return image
 
 
@@ -125,7 +130,7 @@ class Placeholder:
 
 
 class ColorPicker(ttk.Frame):
-    """Choose one of a few preset colours, or any colour with the system picker."""
+    """Choose one of a few preset colors, or any color with the system picker."""
 
     SIZE = 20
     GAP = 8
@@ -198,7 +203,7 @@ class ColorPicker(ttk.Frame):
 
     def _choose_custom(self) -> None:
         _rgb, color = colorchooser.askcolor(
-            color=self._value, parent=self.winfo_toplevel(), title="Choose a colour"
+            color=self._value, parent=self.winfo_toplevel(), title="Choose a color"
         )
         if color:
             self.set(str(color).upper())

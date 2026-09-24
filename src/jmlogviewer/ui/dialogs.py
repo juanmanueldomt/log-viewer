@@ -22,7 +22,7 @@ class Dialog(tk.Toplevel, Generic[T]):
 
     def __init__(self, parent: tk.Misc, title: str, palette: Palette) -> None:
         super().__init__(parent)
-        self.withdraw()  # shown, centred, by show()
+        self.withdraw()  # shown, centered, by show()
         self.title(title)
         self.transient(parent.winfo_toplevel())
         self.resizable(False, False)

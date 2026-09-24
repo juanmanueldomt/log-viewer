@@ -216,7 +216,12 @@ class LogSession:
     def subscribe(self, listener: Callable[[Change], None]) -> Callable[[], None]:
         """Call *listener* on every change; returns a function that unsubscribes."""
         self._listeners.append(listener)
-        return lambda: self._listeners.remove(listener)
+
+        def unsubscribe() -> None:
+            if listener in self._listeners:
+                self._listeners.remove(listener)
+
+        return unsubscribe
 
     def _notify(self, change: Change) -> None:
         for listener in list(self._listeners):
@@ -522,7 +527,7 @@ class LogSession:
             found.append(Activity("Searching", self._search_scan.progress))
         running = [scan for scan in self._rule_scans.values() if scan.running]
         if running:
-            found.append(Activity("Analysing", min(scan.progress for scan in running)))
+            found.append(Activity("Analyzing", min(scan.progress for scan in running)))
         return found
 
     def _set_message(self, message: str) -> None:

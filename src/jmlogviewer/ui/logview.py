@@ -42,7 +42,7 @@ IS_MAC = sys.platform == "darwin"
 
 _WORD = re.compile(r"\w[\w.\-]*\w|\w")
 # Tk 8.6 counts characters outside the BMP as two, which would shift tag
-# positions, and some X11 builds crash drawing colour emoji: show a placeholder.
+# positions, and some X11 builds crash drawing color emoji: show a placeholder.
 _ASTRAL = re.compile(f"[{chr(0x10000)}-{chr(0x10FFFF)}]") if tk.TkVersion < 9.0 else None
 
 
@@ -64,7 +64,7 @@ class ContextInfo:
 
 
 class LogView(ttk.Frame):
-    """Read-only, virtualised view of the rows of a :class:`LogSession`."""
+    """Read-only, virtualized view of the rows of a :class:`LogSession`."""
 
     def __init__(
         self, master: tk.Misc, session: LogSession, palette: Palette, fonts: Fonts
@@ -95,12 +95,13 @@ class LogView(ttk.Frame):
         # Rendering.
         self._rendered: list[tuple[int, str]] = []
         self._first_row = 0
-        self._render_pending = False
+        self._render_id: str | None = None
         self._ruler_dirty = True
         self._rule_signature: tuple[object, ...] | None = None
         self._mark_tags: set[str] = set()
         self._gutter_width = 0
         self._height = 1
+        self._line_px = 1
         # Pointer interaction.
         self._wheel = 0.0
         self._dragging = False
@@ -175,9 +176,8 @@ class LogView(ttk.Frame):
         """Schedule a redraw (several requests are coalesced into one)."""
         if ruler:
             self._ruler_dirty = True
-        if not self._render_pending:
-            self._render_pending = True
-            self.after_idle(self._render)
+        if self._render_id is None:
+            self._render_id = self.after_idle(self._render)
 
     def reset(self) -> None:
         """Forget position and selection, e.g. when another file is opened."""
@@ -188,6 +188,13 @@ class LogView(ttk.Frame):
         self.clear_selection()
         self._text.xview_moveto(0)
         self.refresh(ruler=True)
+
+    def destroy(self) -> None:
+        for after_id in (self._render_id, self._autoscroll_id):
+            if after_id is not None:
+                self.after_cancel(after_id)
+        self._render_id = self._autoscroll_id = None
+        super().destroy()
 
     def apply_palette(self, palette: Palette) -> None:
         self._palette = p = palette
@@ -210,6 +217,7 @@ class LogView(ttk.Frame):
 
     def font_changed(self) -> None:
         font = self._fonts.mono
+        self._line_px = int(font.metrics("linespace")) + 2  # plus spacing1 and spacing3
         self._text.configure(font=font, tabs=(font.measure("    "),), tabstyle="wordprocessor")
         self._gutter_width = 0
         self.refresh(ruler=True)
@@ -240,7 +248,7 @@ class LogView(ttk.Frame):
         self.refresh()
 
     def set_current_line(self, line: int | None, *, reveal: bool = True) -> None:
-        """Make *line* current; with *reveal*, scroll it into view (centred if far)."""
+        """Make *line* current; with *reveal*, scroll it into view (centered if far)."""
         self._current = line
         if line is not None and reveal:
             rows = self.session.rows
@@ -329,10 +337,10 @@ class LogView(ttk.Frame):
     # -- rendering ------------------------------------------------------------
 
     def _line_height(self) -> int:
-        return int(self._fonts.mono.metrics("linespace")) + 2  # spacing1 + spacing3
+        return self._line_px
 
     def _render(self) -> None:
-        self._render_pending = False
+        self._render_id = None
         with contextlib.suppress(tk.TclError):  # the widget may be being destroyed
             self._render_now()
 

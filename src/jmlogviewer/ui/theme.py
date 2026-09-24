@@ -1,4 +1,4 @@
-"""Colours, fonts and ttk styling for a flat, minimal look in light and dark."""
+"""Colors, fonts and ttk styling for a flat, minimal look in light and dark."""
 
 from __future__ import annotations
 
@@ -100,7 +100,7 @@ DARK = Palette(
 PALETTES = {palette.name: palette for palette in (LIGHT, DARK)}
 
 
-# -- colour arithmetic --------------------------------------------------------
+# -- color arithmetic --------------------------------------------------------
 
 
 def _rgb(color: str) -> tuple[int, int, int]:
@@ -188,7 +188,7 @@ def apply_theme(root: tk.Tk, palette: Palette, fonts: Fonts) -> None:
     """Style every ttk widget and the classic Tk option database."""
     p = palette
     style = ttk.Style(root)
-    style.theme_use("clam")  # the most customisable built-in theme on every platform
+    style.theme_use("clam")  # the most customizable built-in theme on every platform
 
     style.configure(
         ".",
@@ -388,7 +388,7 @@ def apply_theme(root: tk.Tk, palette: Palette, fonts: Fonts) -> None:
 
 
 def style_menu(menu: tk.Menu, palette: Palette) -> None:
-    """Recolour an existing menu tree (the option database only affects new menus)."""
+    """Recolor an existing menu tree (the option database only affects new menus)."""
     p = palette
     menu.configure(
         background=p.surface,

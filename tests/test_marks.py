@@ -3,7 +3,7 @@ from __future__ import annotations
 from jmlogviewer.core.marks import Mark, MarkStore
 
 
-def test_mark_normalises_its_range() -> None:
+def test_mark_normalizes_its_range() -> None:
     mark = Mark(9, 3)
     assert (mark.first, mark.last) == (3, 9)
     assert 5 in mark
@@ -63,7 +63,7 @@ def test_update_keeps_order() -> None:
     assert list(store) == [b, a]
 
 
-def test_serialisation_round_trip() -> None:
+def test_serialization_round_trip() -> None:
     mark = Mark(3, 8, color="#123456", label="Startup")
     copy = Mark.from_dict(mark.to_dict())
     assert (copy.first, copy.last, copy.color, copy.label) == (3, 8, "#123456", "Startup")

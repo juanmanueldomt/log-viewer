@@ -9,7 +9,7 @@ FALLBACK_ENCODING = "cp1252"
 
 _UTF16_BOMS = (codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE)
 
-# CSI sequences (colours, cursor movement), OSC sequences (titles, hyperlinks)
+# CSI sequences (colors, cursor movement), OSC sequences (titles, hyperlinks)
 # and the remaining two-character escapes.
 _ANSI_ESCAPE = re.compile(r"\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07\x1b]*(?:\x07|\x1b\\)?|[@-Z\\-_])")
 _CONTROL_CHAR = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
@@ -43,7 +43,7 @@ def detect_encoding(sample: bytes) -> tuple[str, int]:
 def to_display(text: str) -> str:
     """Make decoded file text safe and readable on screen.
 
-    ANSI escape sequences (terminal colours) are dropped and other control
+    ANSI escape sequences (terminal colors) are dropped and other control
     characters, except tab and newline, become visible "control pictures"
     (NUL is shown as ``␀``, a stray carriage return as ``␍``).
     """
@@ -58,7 +58,7 @@ def decode_block(raw: bytes, encoding: str) -> str:
     """Decode a run of whole lines into display text.
 
     The result has the lines separated by ``\\n``: line terminators (``\\n`` or
-    ``\\r\\n``) are normalised and the terminator of the last line is removed, so
+    ``\\r\\n``) are normalized and the terminator of the last line is removed, so
     a block of *n* lines always contains exactly ``n - 1`` newlines.
     """
     text = raw.decode(encoding, "replace")

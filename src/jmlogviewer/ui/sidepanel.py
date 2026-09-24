@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import tkinter as tk
+import tkinter.font as tkfont
 from collections.abc import Callable
 from tkinter import ttk
 
@@ -29,6 +30,12 @@ def _tool(master: tk.Misc, text: str, tip: str, command: Callable[[], object]) -
     return button
 
 
+def _fit_column(tree: ttk.Treeview, column: str, texts: list[str], font: tkfont.Font) -> None:
+    """Make a right-aligned column just wide enough, leaving the rest to the label."""
+    widest = max((font.measure(text) for text in texts), default=0)
+    tree.column(column, width=min(180, max(36, widest + 14)))
+
+
 def _tree(master: tk.Misc, column: str, width: int) -> ttk.Treeview:
     tree = ttk.Treeview(master, columns=(column,), show="tree", selectmode="browse")
     tree.column("#0", stretch=True, width=150, minwidth=80)
@@ -37,17 +44,22 @@ def _tree(master: tk.Misc, column: str, width: int) -> ttk.Treeview:
 
 
 class RulesPanel(ttk.Frame):
-    """Rules list: colour, expression and number of matching lines."""
+    """Rules list: color, expression and number of matching lines."""
 
-    def __init__(self, master: tk.Misc, session: LogSession, palette: Palette) -> None:
+    def __init__(
+        self, master: tk.Misc, session: LogSession, palette: Palette, font: tkfont.Font
+    ) -> None:
         super().__init__(master, style="Surface.TFrame")
         self.session = session
+        self._font = font
         self.on_add: Callable[[], None] = lambda: None
         self.on_edit: Callable[[int], None] = lambda index: None
         self.on_remove: Callable[[int], None] = lambda index: None
         self.on_toggle: Callable[[int], None] = lambda index: None
         self.on_move: Callable[[int, int], None] = lambda index, delta: None
         self.on_navigate: Callable[[int, bool], None] = lambda index, backwards: None
+        self._counts: dict[str, str] = {}  # last count shown per row
+        self._fitted: list[str] = []
 
         bar = ttk.Frame(self, style="Surface.TFrame", padding=(6, 6, 6, 2))
         bar.pack(fill="x")
@@ -122,6 +134,7 @@ class RulesPanel(ttk.Frame):
         tree, palette = self.tree, self._palette
         selected = self.selected_index
         tree.delete(*tree.get_children())
+        self._counts.clear()
         rules = self.session.rules
         for index, rule in enumerate(rules):
             error = self.session.rule_error(index)
@@ -136,15 +149,17 @@ class RulesPanel(ttk.Frame):
             tags = (
                 ["error"] if error else ["off"] if not rule.enabled else ["hide"] if hides else []
             )
+            count = self._counts[str(index)] = self._count(index)
             tree.insert(
                 "",
                 "end",
                 iid=str(index),
                 text=f"  {text}",
                 image=swatch(tree, color, kind=kind),
-                values=(self._count(index),),
+                values=(count,),
                 tags=tags,
             )
+        self._fit_counts()
         if rules:
             self.empty.place_forget()
         else:
@@ -154,9 +169,17 @@ class RulesPanel(ttk.Frame):
 
     def refresh_counts(self) -> None:
         for index in range(len(self.session.rules)):
-            iid = str(index)
-            if self.tree.exists(iid):
-                self.tree.set(iid, "count", self._count(index))
+            iid, count = str(index), self._count(index)
+            if self._counts.get(iid) != count and self.tree.exists(iid):
+                self._counts[iid] = count
+                self.tree.set(iid, "count", count)
+        self._fit_counts()
+
+    def _fit_counts(self) -> None:
+        texts = list(self._counts.values())
+        if texts != self._fitted:
+            self._fitted = texts
+            _fit_column(self.tree, "count", texts, self._font)
 
     def _count(self, index: int) -> str:
         rules = self.session.rules
@@ -204,9 +227,12 @@ class RulesPanel(ttk.Frame):
 class MarksPanel(ttk.Frame):
     """Marked lines and sections, in file order."""
 
-    def __init__(self, master: tk.Misc, session: LogSession, palette: Palette) -> None:
+    def __init__(
+        self, master: tk.Misc, session: LogSession, palette: Palette, font: tkfont.Font
+    ) -> None:
         super().__init__(master, style="Surface.TFrame")
         self.session = session
+        self._font = font
         self.on_go: Callable[[Mark], None] = lambda mark: None
         self.on_edit: Callable[[Mark], None] = lambda mark: None
         self.on_remove: Callable[[Mark], None] = lambda mark: None
@@ -284,6 +310,7 @@ class MarksPanel(ttk.Frame):
                 image=swatch(tree, mark.color),
                 values=(mark.describe_lines(),),
             )
+        _fit_column(tree, "lines", [m.describe_lines() for m in self.session.marks], self._font)
         if self._marks or file is None:
             self.empty.place_forget()
         else:
@@ -340,8 +367,8 @@ class SidePanel(ttk.Frame):
             tab.pack(side="left", padx=(0, 2))
             self._tabs[value] = tab
         ttk.Separator(self).pack(fill="x")
-        self.rules = RulesPanel(self, session, palette)
-        self.marks = MarksPanel(self, session, palette)
+        self.rules = RulesPanel(self, session, palette, fonts.ui)
+        self.marks = MarksPanel(self, session, palette, fonts.ui)
         self._session = session
         self._show()
 
