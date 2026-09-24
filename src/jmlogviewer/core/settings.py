@@ -35,13 +35,16 @@ def default_config_dir() -> Path:
     """Platform-appropriate settings directory (overridable for portable use)."""
     if override := os.environ.get(CONFIG_DIR_ENV):
         return Path(override)
+    # One if/elif/else chain, so type checkers treat each branch as platform-specific.
     if sys.platform == "win32":
         base = os.environ.get("APPDATA")
-        return (Path(base) if base else Path.home() / "AppData" / "Roaming") / APP_NAME
-    if sys.platform == "darwin":
-        return Path.home() / "Library" / "Application Support" / APP_NAME
-    base = os.environ.get("XDG_CONFIG_HOME")
-    return (Path(base) if base else Path.home() / ".config") / APP_NAME.lower()
+        directory = (Path(base) if base else Path.home() / "AppData" / "Roaming") / APP_NAME
+    elif sys.platform == "darwin":
+        directory = Path.home() / "Library" / "Application Support" / APP_NAME
+    else:
+        base = os.environ.get("XDG_CONFIG_HOME")
+        directory = (Path(base) if base else Path.home() / ".config") / APP_NAME.lower()
+    return directory
 
 
 def _get(data: dict[str, Any], key: str, default: T) -> T:
