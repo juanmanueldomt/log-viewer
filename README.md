@@ -11,6 +11,8 @@ resalta expresiones, marca las secciones importantes y sigue el archivo en vivo
 
 ![JMLogViewer, tema claro](docs/screenshot-light.png)
 
+[Latest Release](https://github.com/juanmanueldomt/log-viewer/releases/latest)
+
 ## 🚀 Características
 
 - **Archivos de cualquier tamaño.** El archivo se indexa en segundo plano y solo se
