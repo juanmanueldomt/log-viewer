@@ -86,8 +86,16 @@ class Dialog(tk.Toplevel, Generic[T]):
 class RuleDialog(Dialog[Rule]):
     """Create or edit a highlight rule."""
 
-    def __init__(self, parent: tk.Misc, palette: Palette, rule: Rule | None, color: str) -> None:
-        super().__init__(parent, "Edit rule" if rule else "New rule", palette)
+    def __init__(
+        self,
+        parent: tk.Misc,
+        palette: Palette,
+        rule: Rule | None,
+        color: str,
+        *,
+        title: str | None = None,
+    ) -> None:
+        super().__init__(parent, title or ("Edit rule" if rule else "New rule"), palette)
         rule = rule or Rule(Query(""), color=color)
         self._enabled = rule.enabled
         self.pattern = tk.StringVar(self, rule.query.text)

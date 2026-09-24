@@ -22,8 +22,9 @@ resalta expresiones, marca las secciones importantes y sigue el archivo en vivo
 - **Filtro.** Muestra solo las líneas que coinciden con la búsqueda (como `grep`) sin
   perder la línea en la que estabas: al quitar el filtro vuelves a su contexto.
 - **Reglas de resaltado.** Colorea la línea completa o solo el texto que coincide, u
-  oculta líneas (por ejemplo, ruido como health checks). Cada regla muestra cuántas
-  líneas coinciden y permite saltar entre ellas. Por defecto se resaltan `ERROR` y `WARN`.
+  oculta líneas (por ejemplo, ruido como health checks, con **Search → Hide Lines
+  Containing…**; también hay **Hide Empty Lines**). Cada regla muestra cuántas líneas
+  coinciden y permite saltar entre ellas. Por defecto se resaltan `ERROR` y `WARN`.
 - **Marcas.** Haz clic en el número de una línea para marcarla y <kbd>Shift</kbd>+clic
   en otra para convertir la marca en una sección. Las marcas llevan etiqueta y color, se
   recorren con <kbd>F2</kbd>, se recuerdan por archivo y se exportan a un informe Markdown.

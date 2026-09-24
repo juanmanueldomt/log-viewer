@@ -339,3 +339,27 @@ def test_shortcuts_dialog_opens_and_closes(window: MainWindow) -> None:
     window.root.after(300, close)
     window.show_shortcuts()
     assert len(opened) == 1
+
+
+def test_rule_dialog_validates_and_builds_rules(window: MainWindow) -> None:
+    from jmlogviewer.core.query import Query
+    from jmlogviewer.core.rules import Rule
+    from jmlogviewer.ui.dialogs import RuleDialog
+
+    draft = Rule(Query(""), action=RuleAction.HIDE)
+    dialog = RuleDialog(window.root, window.palette, draft, "#E5484D", title="New rule")
+    try:
+        assert dialog.title() == "New rule"
+        assert not dialog.colors.winfo_ismapped()  # hiding needs no color
+        assert dialog.build_result() is None  # empty expression
+        dialog.regex.set(True)
+        dialog.pattern.set("(unclosed")
+        assert dialog.build_result() is None
+        assert "Invalid pattern" in dialog.error.cget("text")
+        dialog.pattern.set("health.?check")
+        rule = dialog.build_result()
+        assert rule == Rule(
+            Query("health.?check", regex=True), color="#E5484D", action=RuleAction.HIDE
+        )
+    finally:
+        dialog.destroy()

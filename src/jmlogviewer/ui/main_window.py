@@ -251,6 +251,10 @@ class MainWindow:
             variable=self._filter,
             command=self._filter_menu_toggled,
         )
+        search.add_command(
+            label="Hide Lines Containing\N{HORIZONTAL ELLIPSIS}",
+            command=lambda: self.add_rule_dialog(action=RuleAction.HIDE),
+        )
         search.add_checkbutton(
             label="Hide Empty Lines", variable=self._hide_empty, command=self._hide_empty_changed
         )
@@ -753,11 +757,11 @@ class MainWindow:
         if select is not None:
             self.side.rules.select(select)
 
-    def add_rule_dialog(self, text: str = "") -> None:
+    def add_rule_dialog(self, text: str = "", action: RuleAction = RuleAction.LINE) -> None:
         rules = self.session.rules
         color = next_color(rules)
-        draft = Rule(Query(text), color=color) if text else None
-        rule = RuleDialog(self.root, self.palette, draft, color).show()
+        draft = Rule(Query(text), color=color, action=action)
+        rule = RuleDialog(self.root, self.palette, draft, color, title="New rule").show()
         if rule is not None:
             self._set_rules([*rules, rule], select=len(rules))
             self._show_panel("rules")
